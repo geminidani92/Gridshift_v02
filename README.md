@@ -1,5 +1,7 @@
 # GridShift
 
+A puzzle roguelike built with Java. Flip all tiles dark to complete each level.
+
 > **Elegant under pressure.**
 >
 > A deterministic action-puzzle gauntlet built with HTML5 Canvas and vanilla JavaScript.
