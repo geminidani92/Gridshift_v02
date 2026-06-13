@@ -1,6 +1,7 @@
 # GridShift
 
-A puzzle roguelike built with Java. Flip all tiles dark to complete each level.
+A puzzle roguelike built with HTML5, CSS3, JavaScript (ES6), Canvas API. 
+Flip all tiles dark to complete each level.
 
 > **Elegant under pressure.**
 >
