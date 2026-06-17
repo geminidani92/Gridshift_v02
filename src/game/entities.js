@@ -46,14 +46,12 @@ const StageScene = (() => {
 	  OFFSET_Y = TOP_UI + Math.floor((canvas.height - TOP_UI - gridH) / 2);
 	}
 
-
   function startLevel(idx) {
     levelIndex = idx;
     levelDef = LevelsConfig[idx];
 
     cols = levelDef.cols;
     rows = levelDef.rows;
-
 
     // tiles setup
     tiles = [];
@@ -524,8 +522,8 @@ const StageScene = (() => {
 	}
 
   //colori basic
-	const ON_ATTACK = hexToRgb("#00ffff");
-	const ON_BASE   = hexToRgb("#124b5a");
+	const ON_ATTACK = hexToRgb(Theme.colors.tileOnAttack);
+	const ON_BASE   = hexToRgb(Theme.colors.tileOnBase);
 
   //effetto flash
 	function onColorFromFlash(flash01) {
@@ -545,7 +543,7 @@ const StageScene = (() => {
 
   function draw(ctx) {
     // sfondo globale
-    ctx.fillStyle = "#10121c";
+    ctx.fillStyle = Theme.colors.background;
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 
@@ -578,7 +576,7 @@ const StageScene = (() => {
 		// --- SFONDO TILE --- nuovo 
 		// --- SFONDO TILE --- con ATTACK + RELEASE
 		if (t.kind === "blocked") {
-		  ctx.fillStyle = "#0a0c12";
+		  ctx.fillStyle = Theme.colors.tileBlocked;
 		}
 		else {
 		  if (t.value === 1) {
@@ -591,7 +589,7 @@ const StageScene = (() => {
 			  // stiamo facendo release visivo
 			  ctx.fillStyle = onColorFromFlash(1 - t.flash);
 			} else {
-			  ctx.fillStyle = "#1a1f2e"; // OFF stabile
+			  ctx.fillStyle = Theme.colors.tileOff; // OFF stabile
 			}
 		  }
 		}
@@ -622,10 +620,10 @@ const StageScene = (() => {
 		
 		if (t.kind !== "blocked" && t.value === 1) {
 		  const glow = 6 + (1 - t.flash) * 18; // forte all'inizio, poi cala
-		  ctx.shadowColor = "#00ffff";
+		  ctx.shadowColor = Theme.colors.tileOnGlow;
 		  ctx.shadowBlur = glow;
 		  // bordo (se lo usi)
-		  ctx.strokeStyle = "#00ffff"; //"rgba(0,229,255,0.9)";
+		  ctx.strokeStyle = Theme.colors.tileOnGlow; //"rgba(0,229,255,0.9)";
 		  ctx.lineWidth = 2;
 		  ctx.strokeRect(px + 1, py + 1, sz - 2, sz - 2);
 		  ctx.shadowBlur = 0;
@@ -635,7 +633,7 @@ const StageScene = (() => {
 
         // --- BORDO BASE SEMPRE VISIBILE ---
 		//ctx.strokeStyle = "rgba(0, 229, 255, 0.2)"; //nuovo colore
-		ctx.strokeStyle = "rgba(255,255,255,0.08)"; //nuovo colore 2
+		ctx.strokeStyle = Theme.colors.tileBorder; //nuovo colore 2
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 0.5, py + 0.5, sz - 1, sz - 1);
 		
@@ -697,7 +695,7 @@ const StageScene = (() => {
 
         // --- EVIDENZA TILE BLOCCATA DALL'ONDA ---
         if (t.lockedByWave) {
-          ctx.strokeStyle = "#00d5ff";
+          ctx.strokeStyle = Theme.colors.tileWaveLock;
           ctx.lineWidth = 2;
           ctx.strokeRect(sx + 4, sy + 4, TILE_SIZE - 8, TILE_SIZE - 8);
         }
