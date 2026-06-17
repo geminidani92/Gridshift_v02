@@ -13,6 +13,12 @@ const Theme = {
 
     text: "#eaf6ff",
 
+    mapPath: "#4f7cff",
+    mapPathLocked: "#44495a",
+    mapUnlocked: "#4fc3f7",
+    mapSelected: "#ffeb3b",
+    mapText: "#eaf6ff",
+
     success: "#8bc34a",
     warning: "#ff9800",
     danger: "#ff1744"
