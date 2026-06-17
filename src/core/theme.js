@@ -10,6 +10,12 @@ const Theme = {
     background: "#10121c",
     panel: "#13151f",
     tileOff: "#1a1f2e",
+    tileBlocked: "#0a0c12",
+    tileOnAttack: "#00ffff",
+    tileOnBase: "#124b5a",
+    tileOnGlow: "#00ffff",
+    tileWaveLock: "#00d5ff",
+    tileBorder: "rgba(255,255,255,0.08)",
 
     text: "#eaf6ff",
 
