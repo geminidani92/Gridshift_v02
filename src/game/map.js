@@ -90,7 +90,7 @@ const MapScene = (() => {
   }
 
   function draw(ctx) {
-    ctx.fillStyle = "#13151f";
+    ctx.fillStyle = Theme.colors.panel;
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     HUD.drawMapHUD(ctx, GameState.score);
@@ -102,7 +102,7 @@ const MapScene = (() => {
       const b = getNodeById(e.to);
       if (!a || !b) continue;
       const bothUnlocked = (a.state !== "locked" && b.state !== "locked");
-      ctx.strokeStyle = bothUnlocked ? "#4f7cff" : "#44495a";
+      ctx.strokeStyle = bothUnlocked ? Theme.colors.mapPath : Theme.colors.mapPathLocked;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
@@ -114,7 +114,7 @@ const MapScene = (() => {
     nodes.forEach((n, idx) => {
       let fill;
       if (n.state === "locked") fill = "#33363f";
-      else if (n.state === "unlocked") fill = "#4fc3f7";
+      else if (n.state === "unlocked") fill = Theme.colors.mapUnlocked;
       else if (n.state === "completed") fill = "#66bb6a";
 
       if (n.type === "boss") {
@@ -129,11 +129,11 @@ const MapScene = (() => {
 
       if (idx === cursorIndex) {
         ctx.lineWidth = 3;
-        ctx.strokeStyle = "#ffeb3b";
+        ctx.strokeStyle = Theme.colors.mapSelected;
         ctx.stroke();
       }
 
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = Theme.colors.mapText;
       ctx.font = "12px sans-serif";
       const label = (n.type === "boss" ? "B" : "") + n.id;
       ctx.fillText(label, n.x - 8, n.y - 22);
