@@ -1,5 +1,5 @@
 // game/levels.js
-// Dati globali: mappa nodi + archi + configurazione livelli
+// Dati globali: progressione Phase + configurazione livelli
 
 const GameState = {
   currentLevelIndex: 0,
@@ -8,26 +8,34 @@ const GameState = {
 };
 
 // ---------------------------
-// Mappa lineare Phase 1 (5 livelli + boss nel prototipo attuale)
+// Mappa lineare Phase 1 (10 livelli + boss)
 // ---------------------------
 const MapNodesConfig = [
-  { id: 1, x: 150, y: 270, type: "start",  state: "unlocked", levelIndex: 0 },
-  { id: 2, x: 320, y: 190, type: "normal", state: "locked",   levelIndex: 1 },
-  { id: 3, x: 320, y: 350, type: "normal", state: "locked",   levelIndex: 2 },
-  { id: 4, x: 520, y: 190, type: "normal", state: "locked",   levelIndex: 3 },
-  { id: 5, x: 520, y: 350, type: "normal", state: "locked",   levelIndex: 4 },
-  { id: 6, x: 720, y: 270, type: "boss",   state: "locked",   levelIndex: 5 }
+  { id: 1,  x: 0, y: 0, type: "start",  state: "unlocked", levelIndex: 0 },
+  { id: 2,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 1 },
+  { id: 3,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 2 },
+  { id: 4,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 3 },
+  { id: 5,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 4 },
+  { id: 6,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 5 },
+  { id: 7,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 6 },
+  { id: 8,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 7 },
+  { id: 9,  x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 8 },
+  { id: 10, x: 0, y: 0, type: "normal", state: "locked",   levelIndex: 9 },
+  { id: 11, x: 0, y: 0, type: "boss",   state: "locked",   levelIndex: 10 }
 ];
 
-// La nuova mappa è una Phase Progress Scene lineare: completare un livello
-// deve sbloccare solo il livello immediatamente successivo. La vecchia world map
-// aveva un bivio 1->2 e 1->3, che sbloccava due livelli contemporaneamente.
+// Progressione lineare: completare un livello sblocca solo il successivo.
 const MapEdges = [
   { from: 1, to: 2 },
   { from: 2, to: 3 },
   { from: 3, to: 4 },
   { from: 4, to: 5 },
-  { from: 5, to: 6 }
+  { from: 5, to: 6 },
+  { from: 6, to: 7 },
+  { from: 7, to: 8 },
+  { from: 8, to: 9 },
+  { from: 9, to: 10 },
+  { from: 10, to: 11 }
 ];
 
 function getNodeById(id) {
@@ -58,6 +66,9 @@ function unlockSuccessors(node) {
 // "." normale
 // "#" bloccata
 // speciali: trigger / goal / chain(n)
+//
+// Nota produzione: i livelli 6-10 sono placeholder deterministici "random-like".
+// Servono a rendere completa e giocabile la Phase 1; li rifiniremo con playtest.
 // ---------------------------
 
 const LevelsConfig = [
@@ -129,7 +140,7 @@ const LevelsConfig = [
     ]
   },
 
-  // LEVEL 3
+  // LEVEL 3 - Trigger + single chain
   {
     name: "Level 4",
     cols: 10,
@@ -153,7 +164,7 @@ const LevelsConfig = [
     ]
   },
 
-  // LEVEL 4
+  // LEVEL 4 - Split lanes
   {
     name: "Level 5",
     cols: 10,
@@ -178,7 +189,140 @@ const LevelsConfig = [
     ]
   },
 
-  // LEVEL 5 - Boss semplice
+  // LEVEL 5 - Open field with staggered blockers
+  {
+    name: "Level 6",
+    cols: 10,
+    rows: 6,
+    layout: [
+      "..........",
+      ".##...##..",
+      ".....#....",
+      "....#.....",
+      "..##...##.",
+      ".........."
+    ],
+    specials: [
+      { x: 0, y: 5, type: "chain", index: 1 },
+      { x: 9, y: 0, type: "chain", index: 2 },
+      { x: 5, y: 3, type: "trigger" },
+      { x: 9, y: 5, type: "goal" }
+    ],
+    enemies: [
+      { gx: 1, gy: 4, kind: "red" },
+      { gx: 8, gy: 1, kind: "red" },
+      { gx: 6, gy: 4, kind: "orange" }
+    ]
+  },
+
+  // LEVEL 6 - Central corridor
+  {
+    name: "Level 7",
+    cols: 10,
+    rows: 6,
+    layout: [
+      "..##..##..",
+      "..........",
+      "###....###",
+      "..........",
+      "..##..##..",
+      ".........."
+    ],
+    specials: [
+      { x: 1, y: 1, type: "chain", index: 1 },
+      { x: 8, y: 1, type: "chain", index: 2 },
+      { x: 4, y: 3, type: "trigger" },
+      { x: 9, y: 5, type: "goal" }
+    ],
+    enemies: [
+      { gx: 5, gy: 1, kind: "orange" },
+      { gx: 4, gy: 3, kind: "red" },
+      { gx: 8, gy: 5, kind: "red" }
+    ]
+  },
+
+  // LEVEL 7 - Three-step chain
+  {
+    name: "Level 8",
+    cols: 10,
+    rows: 6,
+    layout: [
+      "..........",
+      "..#....#..",
+      "..#....#..",
+      "..........",
+      "..#....#..",
+      ".........."
+    ],
+    specials: [
+      { x: 0, y: 0, type: "chain", index: 1 },
+      { x: 5, y: 3, type: "chain", index: 2 },
+      { x: 9, y: 5, type: "chain", index: 3 },
+      { x: 7, y: 1, type: "trigger" },
+      { x: 9, y: 0, type: "goal" }
+    ],
+    enemies: [
+      { gx: 3, gy: 0, kind: "red" },
+      { gx: 6, gy: 5, kind: "orange" },
+      { gx: 8, gy: 2, kind: "red" }
+    ]
+  },
+
+  // LEVEL 8 - Compressed routes
+  {
+    name: "Level 9",
+    cols: 10,
+    rows: 6,
+    layout: [
+      ".#..##..#.",
+      "..........",
+      "..##..##..",
+      "..........",
+      ".#..##..#.",
+      ".........."
+    ],
+    specials: [
+      { x: 2, y: 1, type: "chain", index: 1 },
+      { x: 7, y: 3, type: "chain", index: 2 },
+      { x: 4, y: 5, type: "trigger" },
+      { x: 9, y: 5, type: "goal" }
+    ],
+    enemies: [
+      { gx: 1, gy: 1, kind: "orange" },
+      { gx: 8, gy: 4, kind: "orange" },
+      { gx: 5, gy: 0, kind: "red" }
+    ]
+  },
+
+  // LEVEL 9 - Phase 1 finale prima del boss
+  {
+    name: "Level 10",
+    cols: 10,
+    rows: 6,
+    layout: [
+      "..........",
+      ".##.##.##.",
+      "..........",
+      "..#....#..",
+      "..........",
+      ".##.##.##."
+    ],
+    specials: [
+      { x: 0, y: 2, type: "chain", index: 1 },
+      { x: 5, y: 0, type: "chain", index: 2 },
+      { x: 9, y: 4, type: "chain", index: 3 },
+      { x: 4, y: 2, type: "trigger" },
+      { x: 9, y: 0, type: "goal" }
+    ],
+    enemies: [
+      { gx: 2, gy: 0, kind: "red" },
+      { gx: 7, gy: 2, kind: "orange" },
+      { gx: 1, gy: 4, kind: "red" },
+      { gx: 8, gy: 5, kind: "orange" }
+    ]
+  },
+
+  // LEVEL 10 - Boss semplice Phase 1
   {
     name: "Boss",
     cols: 12,
@@ -200,7 +344,8 @@ const LevelsConfig = [
     ],
     enemies: [
       { gx: 5, gy: 1, kind: "red" },
-      { gx: 6, gy: 5, kind: "orange" }
+      { gx: 6, gy: 5, kind: "orange" },
+      { gx: 10, gy: 3, kind: "red" }
     ]
   }
 ];
