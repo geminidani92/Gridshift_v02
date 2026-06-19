@@ -8,7 +8,7 @@ const GameState = {
 };
 
 // ---------------------------
-// Mappa (5 livelli + boss)
+// Mappa lineare Phase 1 (5 livelli + boss nel prototipo attuale)
 // ---------------------------
 const MapNodesConfig = [
   { id: 1, x: 150, y: 270, type: "start",  state: "unlocked", levelIndex: 0 },
@@ -19,12 +19,14 @@ const MapNodesConfig = [
   { id: 6, x: 720, y: 270, type: "boss",   state: "locked",   levelIndex: 5 }
 ];
 
+// La nuova mappa è una Phase Progress Scene lineare: completare un livello
+// deve sbloccare solo il livello immediatamente successivo. La vecchia world map
+// aveva un bivio 1->2 e 1->3, che sbloccava due livelli contemporaneamente.
 const MapEdges = [
   { from: 1, to: 2 },
-  { from: 1, to: 3 },
-  { from: 2, to: 4 },
-  { from: 3, to: 5 },
-  { from: 4, to: 6 },
+  { from: 2, to: 3 },
+  { from: 3, to: 4 },
+  { from: 4, to: 5 },
   { from: 5, to: 6 }
 ];
 
