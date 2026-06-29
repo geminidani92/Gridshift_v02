@@ -2,15 +2,17 @@
 // Phase Progress Scene.
 //
 // Questa scena resta nel file map.js perché è ancora "la mappa" del gioco.
-// Non è più una world map con bivi: è una mappa lineare di avanzamento della
-// Phase. Il giocatore può spostarsi a sinistra/destra solo tra i livelli già
-// sbloccati, così può rigiocare livelli precedenti senza introdurre scelte di
-// percorso roguelike.
+// Non è una world map con bivi: è una mappa lineare di avanzamento della Phase.
 //
-// Struttura visiva della scena:
+// Struttura visiva:
 // 1) Barra superiore = vera mappa/progressione della Phase.
 // 2) Fondale sotto = atmosfera contemplativa ispirata al riferimento PNG.
 // 3) Scala/luce centrale = feedback emotivo sul livello selezionato.
+//
+// Nota correzione assonometrica:
+// Il pass precedente orientava i blocchi verso destra/alto. Visivamente era
+// l'opposto della reference. Qui la proiezione viene ruotata: profondità verso
+// sinistra/alto e scala che sale dal basso/destra verso alto/sinistra.
 
 const MapScene = (() => {
   let cursorIndex = 0;
@@ -29,9 +31,8 @@ const MapScene = (() => {
     }
   }
 
-  // Quando il giocatore torna alla mappa dopo una vittoria, selezioniamo il
-  // prossimo livello sbloccato. Se non ce ne sono, lasciamo il cursore sull'ultimo
-  // livello completato. Questo supporta sia progressione sia replay.
+  // Dopo una vittoria selezioniamo il prossimo livello sbloccato.
+  // Se tutta la Phase è completa, restiamo sull'ultimo completato.
   function findDefaultCursorIndex() {
     const nodes = GameState.nodes;
     const firstUnlocked = nodes.findIndex(n => n.state === "unlocked");
@@ -75,13 +76,9 @@ const MapScene = (() => {
   function update(dt) {
     pulseTime += dt;
 
-    // Navigazione lineare: questa non è una world map, quindi niente su/giù.
-    if (Input.isPressed("ArrowLeft") || Input.isPressed("KeyA")) {
-      moveCursor(-1);
-    }
-    if (Input.isPressed("ArrowRight") || Input.isPressed("KeyD")) {
-      moveCursor(1);
-    }
+    // Navigazione lineare: niente su/giù perché non ci sono bivi.
+    if (Input.isPressed("ArrowLeft") || Input.isPressed("KeyA")) moveCursor(-1);
+    if (Input.isPressed("ArrowRight") || Input.isPressed("KeyD")) moveCursor(1);
 
     if (Input.isPressed("Enter") || Input.isPressed("Space")) {
       startSelectedLevel();
@@ -99,9 +96,8 @@ const MapScene = (() => {
   // ---------------------------------------------------------------------------
   // BACKDROP / ATMOSFERA
   // ---------------------------------------------------------------------------
-  // Il fondale non è interattivo e non contiene informazioni di gameplay.
-  // Serve a dare identità alla Phase 1: città astratta, profondità, scale,
-  // luce selettiva. È disegnato proceduralmente per restare leggero e statico.
+  // Il fondale non ha funzione di gameplay. Serve a dare respiro tra i livelli.
+  // La barra sopra resta l'unica vera informazione di progressione.
 
   function drawBackdrop(ctx) {
     const w = ctx.canvas.width;
@@ -110,19 +106,15 @@ const MapScene = (() => {
     drawSkyGradient(ctx, w, h);
     drawHaze(ctx, w, h);
     drawDistantStars(ctx, w, h);
-
-    // Layer ordinati dal più lontano al più vicino: aumenta la profondità.
     drawFarCityLayer(ctx, w, h);
     drawMidCityLayer(ctx, w, h);
-    drawStairPath(ctx);
+    drawStairPath(ctx, w, h);
     drawForegroundCityLayer(ctx, w, h);
-
     drawAtmosphericVeil(ctx, w, h);
     drawVignette(ctx, w, h);
   }
 
   function drawSkyGradient(ctx, w, h) {
-    // Cielo freddo e verticale: blu profondo in alto, quasi nero in basso.
     const bg = ctx.createLinearGradient(0, 0, 0, h);
     bg.addColorStop(0, "#06101c");
     bg.addColorStop(0.38, "#0b2232");
@@ -133,7 +125,6 @@ const MapScene = (() => {
   }
 
   function drawHaze(ctx, w, h) {
-    // Nebbia centrale: simula distanza e separa la barra dal fondale.
     const fog = ctx.createRadialGradient(w * 0.52, h * 0.58, 20, w * 0.52, h * 0.58, w * 0.70);
     fog.addColorStop(0, "rgba(0, 229, 255, 0.18)");
     fog.addColorStop(0.38, "rgba(0, 120, 170, 0.10)");
@@ -144,7 +135,6 @@ const MapScene = (() => {
   }
 
   function drawDistantStars(ctx, w, h) {
-    // Particelle lente e quasi statiche. Non devono sembrare gameplay.
     ctx.save();
     for (let i = 0; i < 56; i++) {
       const x = (i * 83 + 37) % w;
@@ -157,7 +147,6 @@ const MapScene = (() => {
   }
 
   function drawFarCityLayer(ctx, w, h) {
-    // Skyline lontana: silhouette fredde, poco contrasto, molta profondità.
     ctx.save();
     ctx.globalAlpha = 0.52;
 
@@ -186,7 +175,6 @@ const MapScene = (() => {
   }
 
   function drawMidCityLayer(ctx, w, h) {
-    // Layer medio: blocchi più leggibili e prime finestre ciano.
     ctx.save();
     ctx.globalAlpha = 0.78;
 
@@ -207,15 +195,13 @@ const MapScene = (() => {
         side: "rgba(3, 10, 18, 0.98)",
         edge: "rgba(0, 229, 255, 0.07)"
       });
-      drawWindowLights(ctx, b.x, b.y, b.w, b.h, b.d);
+      drawWindowLights(ctx, b.x, b.y, b.w, b.h);
     }
 
     ctx.restore();
   }
 
   function drawForegroundCityLayer(ctx, w, h) {
-    // Primo piano: blocchi grandi ai lati, come quinte sceniche.
-    // Incorniciano la scala centrale senza rubare attenzione alla barra.
     ctx.save();
 
     const leftBlocks = [
@@ -237,48 +223,50 @@ const MapScene = (() => {
         side: "rgba(2, 7, 13, 1)",
         edge: "rgba(0, 229, 255, 0.08)"
       });
-      drawWindowLights(ctx, b.x, b.y, b.w, b.h, b.d);
+      drawWindowLights(ctx, b.x, b.y, b.w, b.h);
     }
 
     ctx.restore();
   }
 
-  // Disegna un blocco pseudo-isometrico con tre facce.
-  // È volutamente semplice: non vogliamo un motore 3D, solo profondità leggibile.
+  // Blocco pseudo-isometrico con profondità verso sinistra/alto.
+  // Questo è il punto tecnico che corregge l'orientamento della scena.
   function drawIsoBlock(ctx, x, y, w, h, depth, colors) {
     const skewY = depth * 0.46;
+    const dx = -depth;
+    const dy = -skewY;
 
-    // Top face.
+    // Faccia superiore.
     ctx.fillStyle = colors.top;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + depth, y - skewY);
-    ctx.lineTo(x + w + depth, y - skewY);
+    ctx.lineTo(x + dx, y + dy);
+    ctx.lineTo(x + w + dx, y + dy);
     ctx.lineTo(x + w, y);
     ctx.closePath();
     ctx.fill();
 
-    // Side face.
+    // Faccia laterale sinistra.
     ctx.fillStyle = colors.side;
     ctx.beginPath();
-    ctx.moveTo(x + w, y);
-    ctx.lineTo(x + w + depth, y - skewY);
-    ctx.lineTo(x + w + depth, y + h - skewY);
-    ctx.lineTo(x + w, y + h);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + dx, y + dy);
+    ctx.lineTo(x + dx, y + h + dy);
+    ctx.lineTo(x, y + h);
     ctx.closePath();
     ctx.fill();
 
-    // Front face.
+    // Faccia frontale.
     ctx.fillStyle = colors.front;
     ctx.fillRect(x, y, w, h);
 
-    // Edge lines molto leggere: leggibilità senza rumore visivo.
+    // Bordi leggeri.
     ctx.strokeStyle = colors.edge;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + depth, y - skewY);
-    ctx.lineTo(x + w + depth, y - skewY);
+    ctx.lineTo(x + dx, y + dy);
+    ctx.lineTo(x + w + dx, y + dy);
     ctx.lineTo(x + w, y);
     ctx.lineTo(x + w, y + h);
     ctx.lineTo(x, y + h);
@@ -286,8 +274,7 @@ const MapScene = (() => {
     ctx.stroke();
   }
 
-  function drawWindowLights(ctx, x, y, w, h, depth) {
-    // Luci sparse: poche, piccole, ciano. Devono suggerire scala, non decorare troppo.
+  function drawWindowLights(ctx, x, y, w, h) {
     ctx.save();
     ctx.fillStyle = "rgba(0, 229, 255, 0.55)";
 
@@ -303,30 +290,27 @@ const MapScene = (() => {
     ctx.restore();
   }
 
-  function drawStairPath(ctx) {
+  function drawStairPath(ctx, w, h) {
     const nodes = GameState.nodes;
     const selected = nodes[cursorIndex];
     const selectedLevel = selected ? cursorIndex + 1 : 1;
-    const w = ctx.canvas.width;
-    const h = ctx.canvas.height;
 
-    // La scala è il focus emotivo del fondale: sale verso destra, come nel reference.
-    // Non sostituisce la progress bar; amplifica visivamente il livello selezionato.
-    const startX = w * 0.34;
+    // Scala ruotata: parte dal basso/destra e sale verso alto/sinistra.
+    const startX = w * 0.70;
     const startY = h * 0.80;
     const stepCount = Math.max(10, nodes.length);
     const stepW = 54;
     const stepH = 12;
     const stepDepth = 20;
-    const dx = 30;
+    const dx = -31;
     const dy = 12;
 
     ctx.save();
 
-    // Ombra della passerella: stacca la scala dalla città.
+    // Ombra della passerella coerente con la nuova direzione.
     ctx.fillStyle = "rgba(0, 0, 0, 0.26)";
     ctx.beginPath();
-    ctx.ellipse(startX + 180, startY + 38, 210, 32, -0.16, 0, Math.PI * 2);
+    ctx.ellipse(startX - 170, startY + 38, 210, 32, 0.16, 0, Math.PI * 2);
     ctx.fill();
 
     for (let i = 0; i < stepCount; i++) {
@@ -334,18 +318,15 @@ const MapScene = (() => {
       const y = startY - i * dy;
       const active = i < selectedLevel;
       const selectedStep = i === selectedLevel - 1;
-
       drawStairStep(ctx, x, y, stepW, stepH, stepDepth, active, selectedStep);
     }
 
-    // Piattaforma finale: il boss è percepito come destinazione, non come bivio.
-    const finalX = startX + (stepCount - 1) * dx + 40;
+    const finalX = startX + (stepCount - 1) * dx - 74;
     const finalY = startY - (stepCount - 1) * dy - 8;
     drawSummitPlatform(ctx, finalX, finalY, cursorIndex === nodes.length - 1);
 
-    // Luce verticale collegata al livello selezionato.
     const beamIndex = Math.min(selectedLevel - 1, stepCount - 1);
-    const beamX = startX + beamIndex * dx + stepW * 0.62;
+    const beamX = startX + beamIndex * dx + stepW * 0.38;
     const beamY = startY - beamIndex * dy + 4;
     drawSelectedBeam(ctx, beamX, beamY, selectedLevel);
 
@@ -353,7 +334,6 @@ const MapScene = (() => {
   }
 
   function drawStairStep(ctx, x, y, w, h, depth, active, selected) {
-    // Colori volutamente più caldi sui gradini attivi: imitano la luce del concept.
     const top = active ? "rgba(210, 236, 226, 0.90)" : "rgba(31, 52, 64, 0.86)";
     const front = active ? "rgba(72, 92, 91, 0.86)" : "rgba(12, 24, 34, 0.90)";
     const side = active ? "rgba(28, 42, 44, 0.94)" : "rgba(6, 14, 23, 0.96)";
@@ -362,19 +342,37 @@ const MapScene = (() => {
     drawIsoBlock(ctx, x, y, w, h, depth, { top, front, side, edge });
 
     if (selected) {
-      ctx.save();
-      ctx.shadowColor = "rgba(255, 230, 86, 0.95)";
-      ctx.shadowBlur = 18;
-      ctx.strokeStyle = "rgba(255, 230, 86, 0.80)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 5, y + 2, w - 10, h + 3);
-      ctx.restore();
+      // Niente strokeRect: quello era il bordo rettangolare che si vedeva male.
+      // Questo highlight segue invece la faccia superiore del gradino.
+      drawTopFaceGlow(ctx, x, y, w, depth);
     }
   }
 
+  function drawTopFaceGlow(ctx, x, y, w, depth) {
+    const skewY = depth * 0.46;
+    const dx = -depth;
+    const dy = -skewY;
+
+    ctx.save();
+    ctx.shadowColor = "rgba(255, 230, 86, 0.95)";
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = "rgba(255, 230, 86, 0.82)";
+    ctx.fillStyle = "rgba(255, 230, 86, 0.14)";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(x + 6, y + 2);
+    ctx.lineTo(x + dx + 8, y + dy + 2);
+    ctx.lineTo(x + w + dx - 8, y + dy + 2);
+    ctx.lineTo(x + w - 6, y + 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
   function drawSummitPlatform(ctx, x, y, selected) {
-    // Destinazione finale / boss: più massiccia dei gradini, ma non troppo luminosa
-    // finché non è selezionata.
     drawIsoBlock(ctx, x, y, 76, 18, 28, {
       top: selected ? "rgba(255, 230, 86, 0.82)" : "rgba(34, 54, 66, 0.78)",
       front: selected ? "rgba(82, 62, 24, 0.86)" : "rgba(12, 24, 34, 0.92)",
@@ -386,7 +384,6 @@ const MapScene = (() => {
   function drawSelectedBeam(ctx, x, y, selectedLevel) {
     const pulse = 0.5 + 0.5 * Math.sin(pulseTime * 3.2);
 
-    // Colonna verticale dorata: è il principale richiamo al riferimento PNG.
     const beam = ctx.createLinearGradient(x, y - 190, x, y + 42);
     beam.addColorStop(0, "rgba(255, 230, 86, 0)");
     beam.addColorStop(0.25, `rgba(255, 230, 86, ${0.08 + pulse * 0.04})`);
@@ -397,11 +394,9 @@ const MapScene = (() => {
     ctx.fillStyle = beam;
     ctx.fillRect(x - 12, y - 190, 24, 232);
 
-    // Core più stretto e brillante.
     ctx.fillStyle = `rgba(255, 246, 170, ${0.18 + pulse * 0.10})`;
     ctx.fillRect(x - 2, y - 158, 4, 170);
 
-    // Piccole particelle attorno alla luce, deterministiche.
     ctx.fillStyle = "rgba(255, 230, 86, 0.78)";
     for (let i = 0; i < 12; i++) {
       const px = x + Math.sin(pulseTime * 1.3 + i * 2.1) * (14 + (i % 3) * 8);
@@ -415,7 +410,6 @@ const MapScene = (() => {
   }
 
   function drawAtmosphericVeil(ctx, w, h) {
-    // Velo di nebbia basso: rende i blocchi meno "piatti" e più lontani.
     const veil = ctx.createLinearGradient(0, h * 0.48, 0, h);
     veil.addColorStop(0, "rgba(0, 0, 0, 0)");
     veil.addColorStop(0.42, "rgba(42, 96, 120, 0.10)");
@@ -425,7 +419,6 @@ const MapScene = (() => {
   }
 
   function drawVignette(ctx, w, h) {
-    // Vignetta: tiene lo sguardo su barra, scala e livello selezionato.
     const vignette = ctx.createRadialGradient(w * 0.52, h * 0.52, w * 0.10, w * 0.52, h * 0.52, w * 0.76);
     vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
     vignette.addColorStop(0.62, "rgba(0, 0, 0, 0.08)");
@@ -463,8 +456,6 @@ const MapScene = (() => {
     ctx.restore();
   }
 
-  // Barra lineare come nel riferimento: è la vera mappa della Phase.
-  // Il fondale sotto è solo atmosfera.
   function drawPhaseProgress(ctx) {
     const nodes = GameState.nodes;
     const count = nodes.length;
@@ -476,8 +467,6 @@ const MapScene = (() => {
 
     ctx.save();
 
-    // Fascia scura morbida dietro la progressione: aumenta la leggibilità senza
-    // trasformarla in un pannello HUD pesante.
     const band = ctx.createLinearGradient(0, y - 44, 0, y + 58);
     band.addColorStop(0, "rgba(0, 0, 0, 0)");
     band.addColorStop(0.34, "rgba(3, 8, 14, 0.36)");
@@ -488,7 +477,6 @@ const MapScene = (() => {
 
     ctx.lineWidth = 2;
 
-    // Linea di progressione divisa per segmenti, così i tratti futuri restano spenti.
     for (let i = 0; i < count - 1; i++) {
       const a = nodes[i];
       const b = nodes[i + 1];
@@ -534,11 +522,8 @@ const MapScene = (() => {
       ctx.shadowBlur = 22;
     }
 
-    if (boss) {
-      drawStar(ctx, x, y, selected ? 18 : 14, color, locked);
-    } else {
-      drawDiamond(ctx, x, y, radius, color, locked);
-    }
+    if (boss) drawStar(ctx, x, y, selected ? 18 : 14, color, locked);
+    else drawDiamond(ctx, x, y, radius, color, locked);
 
     ctx.shadowBlur = 0;
   }
