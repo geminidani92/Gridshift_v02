@@ -9,12 +9,10 @@
 // 2) Fondale sotto = atmosfera contemplativa ispirata al riferimento PNG.
 // 3) Scala/luce centrale = feedback emotivo sul livello selezionato.
 //
-// Nota assonometrica importante:
-// I blocchi NON devono sembrare rivolti via dal giocatore.
-// La faccia frontale deve guardare verso il basso dello schermo, cioè verso il
-// giocatore. La profondità della faccia superiore va verso destra/alto, mentre
-// la faccia frontale scende verso il basso. Questo produce l'effetto del piccolo
-// schema inviato: top visibile + fronte visibile + lato visibile.
+// Nota colori:
+// I colori della scena Phase 1 non sono più sparsi in questo file.
+// La luce gialla, le scale, i blocchi, la foschia e il fallback procedurale
+// leggono i token da Theme.colors in src/core/theme.js.
 
 const MapScene = (() => {
   let cursorIndex = 0;
@@ -95,6 +93,14 @@ const MapScene = (() => {
     drawFooterHint(ctx);
   }
 
+  function rgba(rgb, alpha) {
+    return `rgba(${rgb}, ${alpha})`;
+  }
+
+  function C() {
+    return Theme.colors;
+  }
+
   // ---------------------------------------------------------------------------
   // BACKDROP / ATMOSFERA
   // ---------------------------------------------------------------------------
@@ -117,38 +123,42 @@ const MapScene = (() => {
   }
 
   function drawSkyGradient(ctx, w, h) {
+    const c = C();
     const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, "#06101c");
-    bg.addColorStop(0.38, "#0b2232");
-    bg.addColorStop(0.74, "#091520");
-    bg.addColorStop(1, "#05070c");
+    bg.addColorStop(0, c.phaseSkyTop);
+    bg.addColorStop(0.38, c.phaseSkyMid);
+    bg.addColorStop(0.74, c.phaseSkyLow);
+    bg.addColorStop(1, c.phaseSkyBottom);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
   }
 
   function drawHaze(ctx, w, h) {
+    const c = C();
     const fog = ctx.createRadialGradient(w * 0.52, h * 0.58, 20, w * 0.52, h * 0.58, w * 0.70);
-    fog.addColorStop(0, "rgba(0, 229, 255, 0.18)");
-    fog.addColorStop(0.38, "rgba(0, 120, 170, 0.10)");
-    fog.addColorStop(0.72, "rgba(0, 40, 65, 0.07)");
+    fog.addColorStop(0, c.phaseHazeCore);
+    fog.addColorStop(0.38, c.phaseHazeMid);
+    fog.addColorStop(0.72, c.phaseHazeOuter);
     fog.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = fog;
     ctx.fillRect(0, 0, w, h);
   }
 
   function drawDistantStars(ctx, w, h) {
+    const c = C();
     ctx.save();
     for (let i = 0; i < 56; i++) {
       const x = (i * 83 + 37) % w;
       const y = 78 + ((i * 47 + 19) % Math.floor(h * 0.52));
       const blink = 0.35 + 0.45 * Math.sin(pulseTime * 1.1 + i);
-      ctx.fillStyle = `rgba(0, 229, 255, ${0.08 + blink * 0.18})`;
+      ctx.fillStyle = rgba(c.phaseStarRgb, 0.08 + blink * 0.18);
       ctx.fillRect(x, y, i % 7 === 0 ? 2 : 1.5, i % 7 === 0 ? 2 : 1.5);
     }
     ctx.restore();
   }
 
   function drawFarCityLayer(ctx, w, h) {
+    const c = C();
     ctx.save();
     ctx.globalAlpha = 0.52;
 
@@ -166,10 +176,10 @@ const MapScene = (() => {
 
     for (const t of towers) {
       drawFacingIsoBlock(ctx, t.x, t.y, t.w, t.h, t.d, {
-        top: "rgba(25, 57, 78, 0.40)",
-        front: "rgba(9, 24, 38, 0.76)",
-        side: "rgba(4, 12, 22, 0.88)",
-        edge: "rgba(0, 229, 255, 0.045)"
+        top: c.phaseFarTop,
+        front: c.phaseFarFront,
+        side: c.phaseFarSide,
+        edge: c.phaseFarEdge
       });
     }
 
@@ -177,6 +187,7 @@ const MapScene = (() => {
   }
 
   function drawMidCityLayer(ctx, w, h) {
+    const c = C();
     ctx.save();
     ctx.globalAlpha = 0.78;
 
@@ -192,10 +203,10 @@ const MapScene = (() => {
 
     for (const b of blocks) {
       drawFacingIsoBlock(ctx, b.x, b.y, b.w, b.h, b.d, {
-        top: "rgba(25, 68, 86, 0.46)",
-        front: "rgba(7, 22, 34, 0.92)",
-        side: "rgba(3, 10, 18, 0.98)",
-        edge: "rgba(0, 229, 255, 0.07)"
+        top: c.phaseMidTop,
+        front: c.phaseMidFront,
+        side: c.phaseMidSide,
+        edge: c.phaseMidEdge
       });
       drawWindowLights(ctx, b.x, b.y, b.w, b.h);
     }
@@ -204,6 +215,7 @@ const MapScene = (() => {
   }
 
   function drawForegroundCityLayer(ctx, w, h) {
+    const c = C();
     ctx.save();
 
     const leftBlocks = [
@@ -220,10 +232,10 @@ const MapScene = (() => {
 
     for (const b of [...leftBlocks, ...rightBlocks]) {
       drawFacingIsoBlock(ctx, b.x, b.y, b.w, b.h, b.d, {
-        top: "rgba(20, 47, 60, 0.72)",
-        front: "rgba(4, 13, 22, 0.96)",
-        side: "rgba(2, 7, 13, 1)",
-        edge: "rgba(0, 229, 255, 0.08)"
+        top: c.phaseForegroundTop,
+        front: c.phaseForegroundFront,
+        side: c.phaseForegroundSide,
+        edge: c.phaseForegroundEdge
       });
       drawWindowLights(ctx, b.x, b.y, b.w, b.h);
     }
@@ -300,8 +312,9 @@ const MapScene = (() => {
   }
 
   function drawWindowLights(ctx, x, y, w, h) {
+    const c = C();
     ctx.save();
-    ctx.fillStyle = "rgba(0, 229, 255, 0.55)";
+    ctx.fillStyle = c.phaseWindowLight;
 
     const seeds = [0.21, 0.43, 0.68, 0.82];
     for (let i = 0; i < seeds.length; i++) {
@@ -316,13 +329,13 @@ const MapScene = (() => {
   }
 
   function drawStairPath(ctx, w, h) {
+    const c = C();
     const nodes = GameState.nodes;
     const selected = nodes[cursorIndex];
     const selectedLevel = selected ? cursorIndex + 1 : 1;
 
     // Scala riposizionata come nel reference: dal basso/sinistra verso alto/destra.
-    // La differenza rispetto al pass sbagliato è che i singoli gradini ora hanno
-    // una faccia frontale visibile verso il giocatore.
+    // I singoli gradini hanno una faccia frontale visibile verso il giocatore.
     const startX = w * 0.34;
     const startY = h * 0.80;
     const stepCount = Math.max(10, nodes.length);
@@ -334,7 +347,7 @@ const MapScene = (() => {
 
     ctx.save();
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.26)";
+    ctx.fillStyle = c.phaseShadow;
     ctx.beginPath();
     ctx.ellipse(startX + 175, startY + 38, 210, 32, -0.16, 0, Math.PI * 2);
     ctx.fill();
@@ -362,10 +375,11 @@ const MapScene = (() => {
   }
 
   function drawStairStep(ctx, x, y, w, h, depth, active, selected) {
-    const top = active ? "rgba(210, 236, 226, 0.90)" : "rgba(31, 52, 64, 0.86)";
-    const front = active ? "rgba(72, 92, 91, 0.86)" : "rgba(12, 24, 34, 0.90)";
-    const side = active ? "rgba(28, 42, 44, 0.94)" : "rgba(6, 14, 23, 0.96)";
-    const edge = active ? "rgba(255, 230, 86, 0.34)" : "rgba(0, 229, 255, 0.10)";
+    const c = C();
+    const top = active ? c.phaseStairActiveTop : c.phaseStairInactiveTop;
+    const front = active ? c.phaseStairActiveFront : c.phaseStairInactiveFront;
+    const side = active ? c.phaseStairActiveSide : c.phaseStairInactiveSide;
+    const edge = active ? c.phaseLightSoft : c.phaseStairInactiveEdge;
 
     drawFacingIsoBlock(ctx, x, y, w, h, depth, { top, front, side, edge });
 
@@ -375,14 +389,15 @@ const MapScene = (() => {
   }
 
   function drawTopFaceGlow(ctx, x, y, w, depth) {
+    const c = C();
     const dx = depth;
     const dy = depth * 0.46;
 
     ctx.save();
-    ctx.shadowColor = "rgba(255, 230, 86, 0.95)";
+    ctx.shadowColor = c.phaseLightGlow;
     ctx.shadowBlur = 18;
-    ctx.strokeStyle = "rgba(255, 230, 86, 0.82)";
-    ctx.fillStyle = "rgba(255, 230, 86, 0.14)";
+    ctx.strokeStyle = c.phaseLight;
+    ctx.fillStyle = c.phaseLightFill;
     ctx.lineWidth = 2;
 
     // Highlight sulla faccia superiore, non su un rettangolo 2D.
@@ -399,31 +414,33 @@ const MapScene = (() => {
   }
 
   function drawSummitPlatform(ctx, x, y, selected) {
+    const c = C();
     drawFacingIsoBlock(ctx, x, y, 76, 18, 28, {
-      top: selected ? "rgba(255, 230, 86, 0.82)" : "rgba(34, 54, 66, 0.78)",
-      front: selected ? "rgba(82, 62, 24, 0.86)" : "rgba(12, 24, 34, 0.92)",
-      side: selected ? "rgba(34, 24, 12, 0.96)" : "rgba(5, 12, 20, 0.98)",
-      edge: selected ? "rgba(255, 230, 86, 0.65)" : "rgba(234, 246, 255, 0.12)"
+      top: selected ? c.phaseLight : c.phaseSummitTopInactive,
+      front: selected ? c.phaseSummitFrontActive : c.phaseSummitFrontInactive,
+      side: selected ? c.phaseSummitSideActive : c.phaseSummitSideInactive,
+      edge: selected ? c.phaseLightEdge : c.phaseSummitEdgeInactive
     });
   }
 
   function drawSelectedBeam(ctx, x, y, selectedLevel) {
+    const c = C();
     const pulse = 0.5 + 0.5 * Math.sin(pulseTime * 3.2);
 
     const beam = ctx.createLinearGradient(x, y - 190, x, y + 42);
-    beam.addColorStop(0, "rgba(255, 230, 86, 0)");
-    beam.addColorStop(0.25, `rgba(255, 230, 86, ${0.08 + pulse * 0.04})`);
-    beam.addColorStop(0.62, `rgba(255, 230, 86, ${0.30 + pulse * 0.10})`);
-    beam.addColorStop(1, "rgba(255, 230, 86, 0)");
+    beam.addColorStop(0, rgba(c.phaseLightRgb, 0));
+    beam.addColorStop(0.25, rgba(c.phaseLightRgb, 0.08 + pulse * 0.04));
+    beam.addColorStop(0.62, rgba(c.phaseLightRgb, 0.30 + pulse * 0.10));
+    beam.addColorStop(1, rgba(c.phaseLightRgb, 0));
 
     ctx.save();
     ctx.fillStyle = beam;
     ctx.fillRect(x - 12, y - 190, 24, 232);
 
-    ctx.fillStyle = `rgba(255, 246, 170, ${0.18 + pulse * 0.10})`;
+    ctx.fillStyle = rgba(c.phaseLightCoreRgb, 0.18 + pulse * 0.10);
     ctx.fillRect(x - 2, y - 158, 4, 170);
 
-    ctx.fillStyle = "rgba(255, 230, 86, 0.78)";
+    ctx.fillStyle = rgba(c.phaseLightRgb, 0.78);
     for (let i = 0; i < 12; i++) {
       const px = x + Math.sin(pulseTime * 1.3 + i * 2.1) * (14 + (i % 3) * 8);
       const py = y - 130 + i * 12 - ((selectedLevel + i) % 4) * 7;
@@ -436,19 +453,21 @@ const MapScene = (() => {
   }
 
   function drawAtmosphericVeil(ctx, w, h) {
+    const c = C();
     const veil = ctx.createLinearGradient(0, h * 0.48, 0, h);
-    veil.addColorStop(0, "rgba(0, 0, 0, 0)");
-    veil.addColorStop(0.42, "rgba(42, 96, 120, 0.10)");
-    veil.addColorStop(1, "rgba(0, 0, 0, 0.30)");
+    veil.addColorStop(0, c.phaseOverlayTop);
+    veil.addColorStop(0.42, c.phaseOverlayMid);
+    veil.addColorStop(1, c.phaseOverlayBottom);
     ctx.fillStyle = veil;
     ctx.fillRect(0, h * 0.42, w, h * 0.58);
   }
 
   function drawVignette(ctx, w, h) {
+    const c = C();
     const vignette = ctx.createRadialGradient(w * 0.52, h * 0.52, w * 0.10, w * 0.52, h * 0.52, w * 0.76);
     vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
-    vignette.addColorStop(0.62, "rgba(0, 0, 0, 0.08)");
-    vignette.addColorStop(1, "rgba(0, 0, 0, 0.54)");
+    vignette.addColorStop(0.62, c.phaseVignetteMid);
+    vignette.addColorStop(1, c.phaseVignetteOuter);
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
   }
@@ -483,6 +502,7 @@ const MapScene = (() => {
   }
 
   function drawPhaseProgress(ctx) {
+    const c = C();
     const nodes = GameState.nodes;
     const count = nodes.length;
     const w = ctx.canvas.width;
@@ -495,8 +515,8 @@ const MapScene = (() => {
 
     const band = ctx.createLinearGradient(0, y - 44, 0, y + 58);
     band.addColorStop(0, "rgba(0, 0, 0, 0)");
-    band.addColorStop(0.34, "rgba(3, 8, 14, 0.36)");
-    band.addColorStop(0.72, "rgba(3, 8, 14, 0.28)");
+    band.addColorStop(0.34, c.phaseProgressBand);
+    band.addColorStop(0.72, c.phaseProgressBandSoft);
     band.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = band;
     ctx.fillRect(0, y - 48, w, 118);
