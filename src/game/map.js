@@ -9,10 +9,12 @@
 // 2) Fondale sotto = atmosfera contemplativa ispirata al riferimento PNG.
 // 3) Scala/luce centrale = feedback emotivo sul livello selezionato.
 //
-// Nota correzione assonometrica:
-// Il pass precedente orientava i blocchi verso destra/alto. Visivamente era
-// l'opposto della reference. Qui la proiezione viene ruotata: profondità verso
-// sinistra/alto e scala che sale dal basso/destra verso alto/sinistra.
+// Nota assonometrica importante:
+// I blocchi NON devono sembrare rivolti via dal giocatore.
+// La faccia frontale deve guardare verso il basso dello schermo, cioè verso il
+// giocatore. La profondità della faccia superiore va verso destra/alto, mentre
+// la faccia frontale scende verso il basso. Questo produce l'effetto del piccolo
+// schema inviato: top visibile + fronte visibile + lato visibile.
 
 const MapScene = (() => {
   let cursorIndex = 0;
@@ -163,7 +165,7 @@ const MapScene = (() => {
     ];
 
     for (const t of towers) {
-      drawIsoBlock(ctx, t.x, t.y, t.w, t.h, t.d, {
+      drawFacingIsoBlock(ctx, t.x, t.y, t.w, t.h, t.d, {
         top: "rgba(25, 57, 78, 0.40)",
         front: "rgba(9, 24, 38, 0.76)",
         side: "rgba(4, 12, 22, 0.88)",
@@ -189,7 +191,7 @@ const MapScene = (() => {
     ];
 
     for (const b of blocks) {
-      drawIsoBlock(ctx, b.x, b.y, b.w, b.h, b.d, {
+      drawFacingIsoBlock(ctx, b.x, b.y, b.w, b.h, b.d, {
         top: "rgba(25, 68, 86, 0.46)",
         front: "rgba(7, 22, 34, 0.92)",
         side: "rgba(3, 10, 18, 0.98)",
@@ -217,7 +219,7 @@ const MapScene = (() => {
     ];
 
     for (const b of [...leftBlocks, ...rightBlocks]) {
-      drawIsoBlock(ctx, b.x, b.y, b.w, b.h, b.d, {
+      drawFacingIsoBlock(ctx, b.x, b.y, b.w, b.h, b.d, {
         top: "rgba(20, 47, 60, 0.72)",
         front: "rgba(4, 13, 22, 0.96)",
         side: "rgba(2, 7, 13, 1)",
@@ -229,49 +231,72 @@ const MapScene = (() => {
     ctx.restore();
   }
 
-  // Blocco pseudo-isometrico con profondità verso sinistra/alto.
-  // Questo è il punto tecnico che corregge l'orientamento della scena.
-  function drawIsoBlock(ctx, x, y, w, h, depth, colors) {
-    const skewY = depth * 0.46;
-    const dx = -depth;
-    const dy = -skewY;
+  // Blocco pseudo-isometrico rivolto verso il giocatore.
+  // Coordinate:
+  // - x,y è lo spigolo frontale alto-sinistro;
+  // - la faccia superiore arretra verso destra/alto;
+  // - la faccia frontale scende verso il basso, quindi "guarda" il giocatore.
+  function drawFacingIsoBlock(ctx, x, y, w, h, depth, colors) {
+    const dx = depth;
+    const dy = depth * 0.46;
 
-    // Faccia superiore.
+    const frontLeft = { x, y };
+    const frontRight = { x: x + w, y };
+    const backRight = { x: x + w + dx, y: y - dy };
+    const backLeft = { x: x + dx, y: y - dy };
+    const bottomLeft = { x, y: y + h };
+    const bottomRight = { x: x + w, y: y + h };
+    const backBottomRight = { x: x + w + dx, y: y + h - dy };
+
+    // Faccia superiore: dà la lettura assonometrica.
     ctx.fillStyle = colors.top;
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + dx, y + dy);
-    ctx.lineTo(x + w + dx, y + dy);
-    ctx.lineTo(x + w, y);
+    ctx.moveTo(frontLeft.x, frontLeft.y);
+    ctx.lineTo(frontRight.x, frontRight.y);
+    ctx.lineTo(backRight.x, backRight.y);
+    ctx.lineTo(backLeft.x, backLeft.y);
     ctx.closePath();
     ctx.fill();
 
-    // Faccia laterale sinistra.
+    // Faccia laterale destra: piccola, scura, per dare volume.
     ctx.fillStyle = colors.side;
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + dx, y + dy);
-    ctx.lineTo(x + dx, y + h + dy);
-    ctx.lineTo(x, y + h);
+    ctx.moveTo(frontRight.x, frontRight.y);
+    ctx.lineTo(backRight.x, backRight.y);
+    ctx.lineTo(backBottomRight.x, backBottomRight.y);
+    ctx.lineTo(bottomRight.x, bottomRight.y);
     ctx.closePath();
     ctx.fill();
 
-    // Faccia frontale.
+    // Faccia frontale: questa è la parte "rivolta verso di me".
     ctx.fillStyle = colors.front;
-    ctx.fillRect(x, y, w, h);
+    ctx.beginPath();
+    ctx.moveTo(frontLeft.x, frontLeft.y);
+    ctx.lineTo(frontRight.x, frontRight.y);
+    ctx.lineTo(bottomRight.x, bottomRight.y);
+    ctx.lineTo(bottomLeft.x, bottomLeft.y);
+    ctx.closePath();
+    ctx.fill();
 
-    // Bordi leggeri.
+    // Bordi leggeri, solo per separare le facce senza effetto wireframe.
     ctx.strokeStyle = colors.edge;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + dx, y + dy);
-    ctx.lineTo(x + w + dx, y + dy);
-    ctx.lineTo(x + w, y);
-    ctx.lineTo(x + w, y + h);
-    ctx.lineTo(x, y + h);
+    ctx.moveTo(frontLeft.x, frontLeft.y);
+    ctx.lineTo(frontRight.x, frontRight.y);
+    ctx.lineTo(backRight.x, backRight.y);
+    ctx.lineTo(backLeft.x, backLeft.y);
     ctx.closePath();
     ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(frontRight.x, frontRight.y);
+    ctx.lineTo(bottomRight.x, bottomRight.y);
+    ctx.lineTo(backBottomRight.x, backBottomRight.y);
+    ctx.lineTo(backRight.x, backRight.y);
+    ctx.stroke();
+
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
   }
 
   function drawWindowLights(ctx, x, y, w, h) {
@@ -295,25 +320,28 @@ const MapScene = (() => {
     const selected = nodes[cursorIndex];
     const selectedLevel = selected ? cursorIndex + 1 : 1;
 
-    // Scala ruotata: parte dal basso/destra e sale verso alto/sinistra.
-    const startX = w * 0.70;
+    // Scala riposizionata come nel reference: dal basso/sinistra verso alto/destra.
+    // La differenza rispetto al pass sbagliato è che i singoli gradini ora hanno
+    // una faccia frontale visibile verso il giocatore.
+    const startX = w * 0.34;
     const startY = h * 0.80;
     const stepCount = Math.max(10, nodes.length);
     const stepW = 54;
     const stepH = 12;
-    const stepDepth = 20;
-    const dx = -31;
+    const stepDepth = 22;
+    const dx = 31;
     const dy = 12;
 
     ctx.save();
 
-    // Ombra della passerella coerente con la nuova direzione.
     ctx.fillStyle = "rgba(0, 0, 0, 0.26)";
     ctx.beginPath();
-    ctx.ellipse(startX - 170, startY + 38, 210, 32, 0.16, 0, Math.PI * 2);
+    ctx.ellipse(startX + 175, startY + 38, 210, 32, -0.16, 0, Math.PI * 2);
     ctx.fill();
 
-    for (let i = 0; i < stepCount; i++) {
+    // Disegniamo prima i gradini lontani e poi quelli vicini, per evitare
+    // sovrapposizioni strane tra le facce frontali.
+    for (let i = stepCount - 1; i >= 0; i--) {
       const x = startX + i * dx;
       const y = startY - i * dy;
       const active = i < selectedLevel;
@@ -321,12 +349,12 @@ const MapScene = (() => {
       drawStairStep(ctx, x, y, stepW, stepH, stepDepth, active, selectedStep);
     }
 
-    const finalX = startX + (stepCount - 1) * dx - 74;
+    const finalX = startX + (stepCount - 1) * dx + 40;
     const finalY = startY - (stepCount - 1) * dy - 8;
     drawSummitPlatform(ctx, finalX, finalY, cursorIndex === nodes.length - 1);
 
     const beamIndex = Math.min(selectedLevel - 1, stepCount - 1);
-    const beamX = startX + beamIndex * dx + stepW * 0.38;
+    const beamX = startX + beamIndex * dx + stepW * 0.48;
     const beamY = startY - beamIndex * dy + 4;
     drawSelectedBeam(ctx, beamX, beamY, selectedLevel);
 
@@ -339,19 +367,16 @@ const MapScene = (() => {
     const side = active ? "rgba(28, 42, 44, 0.94)" : "rgba(6, 14, 23, 0.96)";
     const edge = active ? "rgba(255, 230, 86, 0.34)" : "rgba(0, 229, 255, 0.10)";
 
-    drawIsoBlock(ctx, x, y, w, h, depth, { top, front, side, edge });
+    drawFacingIsoBlock(ctx, x, y, w, h, depth, { top, front, side, edge });
 
     if (selected) {
-      // Niente strokeRect: quello era il bordo rettangolare che si vedeva male.
-      // Questo highlight segue invece la faccia superiore del gradino.
       drawTopFaceGlow(ctx, x, y, w, depth);
     }
   }
 
   function drawTopFaceGlow(ctx, x, y, w, depth) {
-    const skewY = depth * 0.46;
-    const dx = -depth;
-    const dy = -skewY;
+    const dx = depth;
+    const dy = depth * 0.46;
 
     ctx.save();
     ctx.shadowColor = "rgba(255, 230, 86, 0.95)";
@@ -360,11 +385,12 @@ const MapScene = (() => {
     ctx.fillStyle = "rgba(255, 230, 86, 0.14)";
     ctx.lineWidth = 2;
 
+    // Highlight sulla faccia superiore, non su un rettangolo 2D.
     ctx.beginPath();
     ctx.moveTo(x + 6, y + 2);
-    ctx.lineTo(x + dx + 8, y + dy + 2);
-    ctx.lineTo(x + w + dx - 8, y + dy + 2);
     ctx.lineTo(x + w - 6, y + 2);
+    ctx.lineTo(x + w + dx - 8, y - dy + 2);
+    ctx.lineTo(x + dx + 8, y - dy + 2);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -373,7 +399,7 @@ const MapScene = (() => {
   }
 
   function drawSummitPlatform(ctx, x, y, selected) {
-    drawIsoBlock(ctx, x, y, 76, 18, 28, {
+    drawFacingIsoBlock(ctx, x, y, 76, 18, 28, {
       top: selected ? "rgba(255, 230, 86, 0.82)" : "rgba(34, 54, 66, 0.78)",
       front: selected ? "rgba(82, 62, 24, 0.86)" : "rgba(12, 24, 34, 0.92)",
       side: selected ? "rgba(34, 24, 12, 0.96)" : "rgba(5, 12, 20, 0.98)",
